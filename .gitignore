@@ -1,0 +1,5 @@
+/bin/
+/nauka
+/dist/
+.env
+.env.*
