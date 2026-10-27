@@ -69,12 +69,15 @@ func KeybindingsFile() string {
 	b.WriteString("# Keys inside the nauka screen, for Vayu's keybinding search\n")
 	b.WriteString("# (keybind-search.py reads ~/.tmux/plugins/*/scripts). Generated from\n")
 	b.WriteString("# internal/tui/keys.go by `go test ./internal/tui -update`; don't edit.\n")
+	// marker is kept apart from the rest of the line: the binary holds this
+	// format string, and the keybinding search scans plugins' bin/ folders.
+	marker := strings.Join([]string{"#", "keybind"}, " ")
 	for _, k := range Keys {
 		where := ""
 		if k.Where != "" {
 			where = " (" + whereNames[k.Where] + ")"
 		}
-		fmt.Fprintf(&b, "# keybind: Tmux/nauka | %s | %s%s\n", k.Keys, k.Desc, where)
+		fmt.Fprintf(&b, "%s: Tmux/nauka | %s | %s%s\n", marker, k.Keys, k.Desc, where)
 	}
 	return b.String()
 }

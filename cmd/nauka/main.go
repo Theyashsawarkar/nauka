@@ -14,7 +14,7 @@ import (
 )
 
 // Version is nauka's version.
-const Version = "0.1.0"
+const Version = "0.1.1"
 
 const usage = `nauka: Docker in the terminal.
 

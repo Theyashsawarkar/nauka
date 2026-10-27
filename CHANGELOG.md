@@ -2,6 +2,11 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.1.1 (2026-10-27)
+
+- The built binary no longer holds a line Vayu's keybinding search took
+  for a broken key description (it scans plugins' `bin/` folders).
+
 ## v0.1.0 (2026-10-27)
 
 - First release: containers, compose projects, images, volumes, networks
