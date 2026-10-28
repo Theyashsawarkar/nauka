@@ -30,3 +30,5 @@ jobs:
         run: |
           make install DESTDIR="$RUNNER_TEMP/pkg" PREFIX=/usr
           test -x "$RUNNER_TEMP/pkg/usr/bin/nauka"
+      - name: Website is up to date
+        run: python3 scripts/build-site.py --check

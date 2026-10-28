@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nauka · Docker in the terminal: containers, compose, images, volumes and networks, with what&#x27;s attached to what.</title>
+<meta name="description" content="Docker in the terminal: containers, compose, images, volumes and networks, with what&#x27;s attached to what.">
+<meta property="og:title" content="nauka · Docker in the terminal: containers, compose, images, volumes and networks, with what&#x27;s attached to what.">
+<meta property="og:description" content="Docker in the terminal: containers, compose, images, volumes and networks, with what&#x27;s attached to what.">
+<meta name="theme-color" content="#11111b">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<style>:root{--accent:#89b4fa;--glow:#89b4fa33}</style>
+</head>
+<body>
+<header class="top"><div class="in">
+<a class="brand" href="index.html"><img src="assets/logo.svg" alt=""><span>nauka <small>नौका</small></span></a>
+<nav><a href="index.html" class="on">Overview</a><a href="changelog.html" class="">Changelog</a><a href="adr/index.html" class=" hide">Decisions</a><a class="gh" href="https://github.com/Theyashsawarkar/nauka">GitHub ↗</a></nav></div></header>
+<section class="hero"><div class="in"><div>
+<div class="eyebrow">Docker</div>
+<h1>nauka</h1>
+<div class="sa">नौका <span>· “boat”</span></div>
+<p class="lead">Docker in the terminal: containers, compose, images, volumes and networks, with what&#x27;s attached to what.</p>
+<div class="cta"><a class="btn primary" href="#install">Install</a><a class="btn" href="https://github.com/Theyashsawarkar/nauka">GitHub ↗</a>
+<a class="btn" href="changelog.html">What's new in v0.1.1</a></div>
+<div class="meta"><span><b>v0.1.1</b> latest</span><span><b>2</b> releases</span><span><b>1</b> decisions recorded</span><span><b>MIT</b> license</span></div>
+</div><img class="logo" src="assets/logo.svg" alt="nauka logo"></div></section>
+<div class="wrap"><aside class="toc"><b>On this page</b><a class="l2" href="#sections">Sections</a><a class="l3" href="#safe-by-default">Safe by default</a><a class="l2" href="#keys">Keys</a><a class="l2" href="#install">Install</a><a class="l3" href="#as-a-tmux-plugin">As a tmux plugin</a><a class="l2" href="#colours">Colours</a><a class="l2" href="#license">License</a></aside><article>
+<h1 id="nauka"><a class="anchor" href="#nauka">#</a>nauka</h1>
+<p><strong>Docker in the terminal: containers, compose projects, images, volumes, networks and disk use, with what's attached to what.</strong> Start, stop, open a shell, follow logs, bring a compose project up or down, prune, all from the keyboard.</p>
+<p>nauka (नौका) is Sanskrit for a boat.</p>
+<pre class="code" data-lang=""><code> Containers 4   Compose 1   Images 15   Volumes 6   Networks 4   System     nauka · docker 29.9.1 · 3 running
+╭─ Containers · 3 running · 1 stopped ───────────╮╭─ onadssuper-postgres-1 ─────────────────────────╮
+│    NAME          IMAGE              PORTS  CPU │ │ 1 Overview  2 Logs  3 Stats  4 Env  5 Inspect  │
+│ ▌● postgres-1    pgvector/pgvector  54320  0.5%│ │ status   up 25h · healthy                      │
+│  ● redis-1       redis:8.2-alpine   63790  0.5%│ │ compose  onadssuper / postgres                  │
+│  ● mailpit-1     axllent/mailpit    8025   0.0%│ │ VOLUMES · 2                                    │
+│  ○ aura-local    redis:7-alpine           exited│ │  󰋊 onadssuper_postgres-data → /var/lib/...     │
+╰────────────────────────────────────────────────╯│ NETWORKS · 1                                   │
+                                                  │  󰛳 onadssuper_default 172.18.0.4 · with redis-1 │
+ containers  s start/stop  r restart  p pause  e shell  l logs  1-6 details  d remove  ? keys</code></pre>
+<h2 id="sections"><a class="anchor" href="#sections">#</a>Sections</h2>
+<p>Tab / Shift+Tab move between them. Each is a list on the left and the selected item's details on the right; Enter focuses the details, where Enter on a linked volume, network, image or container <strong>jumps to it</strong> in its own section, and Backspace comes back.</p>
+<ul><li><strong>Containers</strong>: state, image, published ports, CPU, uptime. The details have six tabs (<code>1</code>–<code>6</code>):<ul><li><strong>Overview</strong>: status and health, compose project and service, ports, restart policy, command, the <strong>image</strong>, the <strong>volumes</strong> mounted (where, size, read-only or not, bind mounts too) and the <strong>networks</strong> it's on (its IP, and who else is there), with live CPU and memory.</li><li><strong>Logs</strong>: the last 500 lines, refreshed every 2 s, errors in red and warnings in yellow. <code>l</code> follows them full screen.</li><li><strong>Stats</strong>: CPU, memory, network and disk I/O, processes.</li><li><strong>Env</strong>: the environment; values of secret-looking keys (password, token, key...) stay hidden until <code>v</code>.</li><li><strong>Inspect</strong>: <code>docker inspect</code>, scrollable.</li><li><strong>Files</strong>: browse the container's folders; <code>c</code> copies a file out to <code>~/Downloads</code>.</li></ul></li><li><strong>Compose</strong>: every compose project (from its containers' labels), its services, folder and file. <code>u</code> up, <code>d</code> down, <code>r</code> restart, <code>b</code> build, <code>p</code> pull, <code>l</code> logs of every service, <code>e</code> edit the file, <code>y</code> show it.</li><li><strong>Images</strong>: size, age, which containers use each; details show the entrypoint, exposed ports, declared volumes, tags, and <code>H</code> the layers. <code>r</code> runs a container (asks for the <code>docker run</code> options), <code>p</code> pulls a newer copy.</li><li><strong>Volumes</strong>: size and the containers using each, anonymous ones marked. <code>f</code> opens a shell in its files (in a throwaway alpine container), <code>n</code> creates one.</li><li><strong>Networks</strong>: driver, subnet, gateway and who's on it with their IPs. <code>c</code> connects a container, <code>x</code> disconnects one, <code>n</code> creates one.</li><li><strong>System</strong>: <code>docker system df</code> (what takes how much, what's reclaimable) and <code>P</code> to prune: stopped containers, dangling or unused images, unused volumes or networks, the build cache, or everything.</li></ul>
+<h3 id="safe-by-default"><a class="anchor" href="#safe-by-default">#</a>Safe by default</h3>
+<p>Anything that deletes asks first and says what goes (a volume's size, the containers a down removes, how much a prune frees). A volume or image a container still uses isn't removed: nauka says which containers to remove first. Secrets in Env are hidden until you ask.</p>
+<h2 id="keys"><a class="anchor" href="#keys">#</a>Keys</h2>
+<div class="table"><table><thead><tr><th>Key</th><th>Does</th></tr></thead><tbody><tr><td><code>j</code> / <code>k</code>, <code>Home</code> / <code>End</code>, <code>Ctrl+d</code> / <code>Ctrl+u</code></td><td>Move</td></tr><tr><td><code>Tab</code> / <code>Shift+Tab</code></td><td>Switch section</td></tr><tr><td><code>Enter</code></td><td>Focus the details; on a link, jump to it</td></tr><tr><td><code>Backspace</code></td><td>Go back where you jumped from (up a folder in Files)</td></tr><tr><td><code>Esc</code></td><td>Leave the details, clear the search, or quit</td></tr><tr><td><code>/</code></td><td>Search the list</td></tr><tr><td><code>Ctrl+r</code></td><td>Reload now (it reloads every 2 s)</td></tr><tr><td><code>?</code></td><td>Show every key</td></tr><tr><td><code>q</code></td><td>Quit</td></tr></tbody></table></div>
+<p>Containers: <code>s</code> start/stop · <code>r</code> restart · <code>p</code> pause/unpause · <code>e</code> shell (bash, else sh) · <code>l</code> follow logs · <code>o</code> open its published port in the browser · <code>d</code> remove · <code>1</code>–<code>6</code> details · <code>v</code> show secrets in Env · <code>c</code> copy a file out (Files).</p>
+<p>Compose: <code>u</code> up · <code>d</code> down · <code>r</code> restart · <code>b</code> build · <code>p</code> pull · <code>l</code> logs · <code>e</code> edit · <code>y</code> compose file.</p>
+<p>Images: <code>r</code> run · <code>p</code> pull · <code>H</code> layers · <code>d</code> remove · <code>P</code> prune dangling.</p>
+<p>Volumes: <code>f</code> browse · <code>n</code> new · <code>d</code> remove · <code>P</code> prune unused.</p>
+<p>Networks: <code>c</code> connect · <code>x</code> disconnect · <code>n</code> new · <code>d</code> remove · <code>P</code> prune.</p>
+<p>System: <code>P</code> prune (pick what).</p>
+<h2 id="install"><a class="anchor" href="#install">#</a>Install</h2>
+<p>Needs Linux and the <code>docker</code> command (with the compose plugin for the Compose section), and access to the daemon (the docker group, or rootless Docker). nauka runs the docker command for everything, so it follows your docker context exactly.</p>
+<pre class="code" data-lang="sh"><code>curl -fsSL https://raw.githubusercontent.com/Theyashsawarkar/nauka/main/install.sh | bash</code></pre>
+<p>downloads the release binary (or builds it with Go) into <code>~/.local/share/nauka</code> and links <code>~/.local/bin/nauka</code>. Or <code>make install</code> (<code>PREFIX</code>, <code>DESTDIR</code>), or <code>go install github.com/Theyashsawarkar/nauka/cmd/nauka@latest</code>.</p>
+<h3 id="as-a-tmux-plugin"><a class="anchor" href="#as-a-tmux-plugin">#</a>As a tmux plugin</h3>
+<pre class="code" data-lang="tmux"><code>set -g @plugin &#x27;Theyashsawarkar/nauka&#x27;</code></pre>
+<p><code>prefix D</code> opens nauka in a popup; <code>D</code> inside closes it. Without nauka on your <code>PATH</code>, the plugin builds it with Go the first time.</p>
+<div class="table"><table><thead><tr><th>Option</th><th>Default</th><th></th></tr></thead><tbody><tr><td><code>@nauka-key</code></td><td><code>D</code></td><td>the key after the prefix; <code>none</code> binds nothing</td></tr><tr><td><code>@nauka-width</code> / <code>@nauka-height</code></td><td><code>90%</code> / <code>88%</code></td><td>popup size</td></tr><tr><td><code>@nauka-title</code></td><td><code> nauka </code></td><td>popup title</td></tr><tr><td><code>@nauka-launcher</code></td><td></td><td>your own popup command instead of <code>display-popup</code>; it gets display-popup's arguments (<code>-E -d DIR -T TITLE CMD</code>)</td></tr></tbody></table></div>
+<p>To open it from a status-line click, open a popup that runs <code>~/.tmux/plugins/nauka/scripts/nauka-run</code>.</p>
+<h2 id="colours"><a class="anchor" href="#colours">#</a>Colours</h2>
+<p>nauka follows <a href="https://github.com/Theyashsawarkar/varna">varna</a>'s desktop theme (<code>~/.local/state/varna/palette.json</code>, a <code>tools.nauka</code> pick if the theme has one) and changes live with it; without varna it is Catppuccin Mocha. Icons need a Nerd Font; <code>NO_NERD_FONT=1</code> turns them off.</p>
+<h2 id="license"><a class="anchor" href="#license">#</a>License</h2>
+<p>MIT</p>
+</article></div>
+<footer><div class="in"><div><h4>Desktop</h4><a href="https://theyashsawarkar.github.io/vayu/" class="">vayu <span>वायु · the keyboard-driven Wayland desktop</span></a></div><div><h4>Apps</h4><a href="https://theyashsawarkar.github.io/kosha/" class="">kosha <span>कोश · package manager</span></a><a href="https://theyashsawarkar.github.io/nada/" class="">nada <span>नाद · music player</span></a><a href="https://theyashsawarkar.github.io/drishya/" class="">drishya <span>दृश्य · video player</span></a><a href="https://theyashsawarkar.github.io/sangam/" class="">sangam <span>संगम · pull requests in the terminal</span></a><a href="https://theyashsawarkar.github.io/sandesh/" class="">sandesh <span>संदेश · mail and chat in the terminal</span></a><a href="https://theyashsawarkar.github.io/pattan/" class="">pattan <span>पत्तन · ports and tunnels</span></a><a href="https://theyashsawarkar.github.io/nauka/" class="me">nauka <span>नौका · Docker in the terminal</span></a><a href="https://theyashsawarkar.github.io/anumati/" class="">anumati <span>अनुमति · commands for AI agents, approved</span></a><a href="https://theyashsawarkar.github.io/pramana/" class="">pramana <span>प्रमाण · password prompts</span></a><a href="https://theyashsawarkar.github.io/vesha/" class="">vesha <span>वेष · Claude Code accounts</span></a><a href="https://theyashsawarkar.github.io/ekatva/" class="">ekatva <span>एकत्व · phone and laptop, linked</span></a><a href="https://theyashsawarkar.github.io/varna/" class="">varna <span>वर्ण · theme engine</span></a><a href="https://theyashsawarkar.github.io/vinyasa/" class="">vinyasa <span>विन्यास · settings</span></a></div><div><h4>Vyom</h4><a href="https://theyashsawarkar.github.io/vyom/" class="">vyom <span>व्योम · panels runtime</span></a></div><div><h4>Vyom tools</h4><a href="https://theyashsawarkar.github.io/dvara/" class="">dvara <span>द्वार · apps</span></a><a href="https://theyashsawarkar.github.io/ganit/" class="">ganit <span>गणित · calculator</span></a><a href="https://theyashsawarkar.github.io/smriti/" class="">smriti <span>स्मृति · clipboard</span></a><a href="https://theyashsawarkar.github.io/bhava/" class="">bhava <span>भाव · emoji</span></a><a href="https://theyashsawarkar.github.io/tarang/" class="">tarang <span>तरंग · Wi‑Fi</span></a><a href="https://theyashsawarkar.github.io/setu/" class="">setu <span>सेतु · Bluetooth</span></a><a href="https://theyashsawarkar.github.io/doot/" class="">doot <span>दूत · phone</span></a><a href="https://theyashsawarkar.github.io/patra/" class="">patra <span>पात्र · Docker</span></a><a href="https://theyashsawarkar.github.io/suchana/" class="">suchana <span>सूचना · notifications</span></a><a href="https://theyashsawarkar.github.io/raga/" class="">raga <span>राग · YouTube</span></a><a href="https://theyashsawarkar.github.io/mudra/" class="">mudra <span>मुद्रा · keybindings</span></a><a href="https://theyashsawarkar.github.io/urja/" class="">urja <span>ऊर्जा · battery</span></a><a href="https://theyashsawarkar.github.io/vishram/" class="">vishram <span>विश्राम · power menu</span></a><a href="https://theyashsawarkar.github.io/kendra/" class="">kendra <span>केन्द्र · quick settings</span></a></div></div>
+<div class="bottom">nauka is free software under the MIT license · <a href="https://github.com/Theyashsawarkar/nauka">source</a> · <a href="https://github.com/Theyashsawarkar/nauka/issues">issues</a> · <a href="changelog.html">changelog</a> · part of <a href="https://theyashsawarkar.github.io/vayu/">Vayu</a></div></footer>
+<script>
+document.querySelectorAll('pre.code').forEach(p=>{const b=document.createElement('button');b.className='copy';b.textContent='Copy';
+b.onclick=()=>{navigator.clipboard.writeText(p.innerText.replace(/^Copy/,'')).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1200)})};p.appendChild(b)});
+const links=[...document.querySelectorAll('.toc a')];if(links.length){const hs=links.map(a=>document.getElementById(a.hash.slice(1))).filter(Boolean);
+const on=()=>{let cur=hs[0];for(const h of hs){if(h.getBoundingClientRect().top<120)cur=h}links.forEach(a=>a.classList.toggle('on',cur&&a.hash==='#'+cur.id))};
+addEventListener('scroll',on,{passive:true});on()}
+</script>
+</body>
+</html>

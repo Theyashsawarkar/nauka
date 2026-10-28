@@ -27,3 +27,4 @@ Vayu-specific behaviour only through the `@nauka-*` options.
   then `tmux -L t send-keys -t o ...` / `capture-pane -p -t o`, and
   `tmux -L t kill-server` after. Never stop, remove or prune the user's
   containers, images, volumes or networks in a test: only read.
+- The website (docs/, GitHub Pages) is generated: after changing README.md, CHANGELOG.md or docs/adr/, run `python3 scripts/build-site.py` and commit docs/ (CI checks it). A significant design decision gets a new ADR in docs/adr/ (next number; supersede, never rewrite).

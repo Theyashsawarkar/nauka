@@ -1,0 +1,8 @@
+# The project website (docs/, GitHub Pages): built by scripts/build-site.py
+name = "nauka"
+sanskrit = "नौका"
+meaning = "boat"
+tagline = "Docker in the terminal: containers, compose, images, volumes and networks, with what's attached to what."
+color = "blue"
+kind = "Docker"
+logo = "assets/logo.svg"
