@@ -20,6 +20,14 @@ nauka (नौका) is Sanskrit for a boat.
  containers  s start/stop  r restart  p pause  e shell  l logs  1-6 details  d remove  ? keys
 ```
 
+<p align="center">
+  <img alt="nauka's Containers tab: the running containers with ports, CPU and uptime, and the selected one's overview: compose project, ports, image, networks, CPU and memory" src="assets/screenshots/containers.png" width="100%">
+</p>
+<p align="center">
+  <img alt="The Compose tab: a project with its three services up and healthy" src="assets/screenshots/images.png" width="49%">
+</p>
+<p align="center"><sub>Screenshots use made-up demo data.</sub></p>
+
 ## Sections
 
 Tab / Shift+Tab move between them. Each is a list on the left and the

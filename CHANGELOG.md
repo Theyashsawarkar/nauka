@@ -4,6 +4,8 @@ Newest first. Releases are tags (`vX.Y.Z`).
 
 ## Unreleased
 
+
+- Screenshots in the README and on the website.
 - A website (GitHub Pages, https://theyashsawarkar.github.io/nauka/): the README as a home page, the changelog and architecture decision records (`docs/adr/`), built by `scripts/build-site.py` like the other Vayu tools' sites; CI checks it's up to date.
 
 ## v0.1.1 (2026-10-27)
