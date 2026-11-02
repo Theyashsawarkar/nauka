@@ -10,7 +10,7 @@ Vayu-specific behaviour only through the `@nauka-*` options.
 
 - Layout: `internal/dock` runs docker and parses its JSON; `internal/tui`
   the screen (`model.go` state, keys and actions, `views.go` drawing);
-  `internal/ui` the drawing kit shared in look with sandesh and pattan.
+  `internal/ui` the drawing kit shared in look with narada and pattan.
 - Keys live in `internal/tui/keys.go`. After adding, changing or removing
   one: `go test ./internal/tui -update` (rewrites `scripts/keybindings`,
   which Vayu's keybinding search reads), and update the README's keys.
