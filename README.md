@@ -1,5 +1,20 @@
 # nauka
 
+<!-- identity -->
+<p align="center">
+  <img alt="nauka logo" src="assets/logo.svg" width="120">
+</p>
+
+<p align="center">
+  <b>अपि चेदसि पापेभ्यः सर्वेभ्यः पापकृत्तमः ।<br>
+  सर्वं ज्ञानप्लवेनैव वृजिनं सन्तरिष्यसि ॥</b><br>
+  <i>Even if you were the worst of all wrongdoers, you would cross all that wrong on the raft of knowledge alone.</i><br>
+  <sub>Bhagavad Gītā 4.36</sub>
+</p>
+<!-- /identity -->
+
+> *Nauka* (नौका) is Sanskrit for "boat": the boats your containers sail in.
+
 **Docker in the terminal: containers, compose projects, images, volumes,
 networks and disk use, with what's attached to what.** Start, stop, open a
 shell, follow logs, bring a compose project up or down, prune, all from the

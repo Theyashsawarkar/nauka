@@ -6,3 +6,6 @@ tagline = "Docker in the terminal: containers, compose, images, volumes and netw
 color = "blue"
 kind = "Docker"
 logo = "assets/logo.svg"
+shloka = "अपि चेदसि पापेभ्यः सर्वेभ्यः पापकृत्तमः ।\nसर्वं ज्ञानप्लवेनैव वृजिनं सन्तरिष्यसि ॥"
+shloka_meaning = "Even if you were the worst of all wrongdoers, you would cross all that wrong on the raft of knowledge alone."
+shloka_source = "Bhagavad Gītā 4.36"

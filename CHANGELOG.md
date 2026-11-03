@@ -4,6 +4,7 @@ Newest first. Releases are tags (`vX.Y.Z`).
 
 ## Unreleased
 
+- A logo and a shloka at the top of the README and the website: every Vayu tool has them now.
 
 - Screenshots in the README and on the website.
 - A website (GitHub Pages, https://theyashsawarkar.github.io/nauka/): the README as a home page, the changelog and architecture decision records (`docs/adr/`), built by `scripts/build-site.py` like the other Vayu tools' sites; CI checks it's up to date.
