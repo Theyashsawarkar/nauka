@@ -21,7 +21,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/Theyashsawarkar/nauka/internal/dock"
-	"github.com/Theyashsawarkar/nauka/internal/ui"
+	"github.com/Theyashsawarkar/vyakarana/keymap"
+	"github.com/Theyashsawarkar/vyakarana/mode"
+	"github.com/Theyashsawarkar/vyakarana/popup"
+	"github.com/Theyashsawarkar/vyakarana/ui"
 )
 
 const (
@@ -53,21 +56,16 @@ type Options struct {
 	PopupKey string // in a tmux popup: this key closes it too
 }
 
-type popup int
+type pop int
 
 const (
-	popNone popup = iota
+	popNone pop = iota
 	popHelp
 	popConfirm
 	popInput
 	popPick
+	popPalette
 )
-
-type confirm struct {
-	title, yes, color string
-	body              []string
-	act               tea.Cmd
-}
 
 type inputBox struct {
 	title, hint string
@@ -133,11 +131,14 @@ type Model struct {
 	filter    textinput.Model
 	filtering bool
 
-	pop     popup
-	conf    *confirm
-	input   *inputBox
-	pick    *pickBox
-	helpTop int
+	eng   keymap.Engine
+	which bool // the which-key box is showing
+	pop   pop
+	conf  popup.Confirm
+	help  popup.Help
+	pal   popup.Palette
+	input *inputBox
+	pick  *pickBox
 
 	dw int // the details pane's inner width, set while drawing
 
@@ -154,7 +155,8 @@ func New(opt Options) Model {
 	f.Placeholder = "name, image, project…"
 	return Model{opt: opt, st: ui.New(ui.LoadTheme("nauka")), stamp: ui.ThemeStamp(), filter: f,
 		stats: map[string]dock.Stats{}, volSize: map[string]string{}, logs: map[string][]string{},
-		imgs: map[string]dock.ImageDetails{}, compose: map[string][]string{}, fileDir: "/"}
+		imgs: map[string]dock.ImageDetails{}, compose: map[string][]string{}, fileDir: "/",
+		eng: keymap.NewEngine(Keys, mode.Normal)}
 }
 
 // ------------------------------------------------------------- messages
@@ -379,11 +381,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.msg = ""
 		}
 		return m, nil
+	case popup.WhichMsg:
+		m.which = msg.Gen == m.eng.Gen() && m.eng.Waiting()
+		return m, nil
+	case sayMsg:
+		m.busy = string(msg)
+		return m, m.say(string(msg)+"…", nil)
 	case tea.KeyMsg:
+		if msg.Type == tea.KeyRunes && len(msg.Runes) > 1 && !msg.Paste {
+			// Keys typed fast (or sent by tmux) can arrive as one message,
+			// "gg": the grammar reads them one by one.
+			var mm tea.Model = m
+			var cmds []tea.Cmd
+			for _, r := range msg.Runes {
+				var cmd tea.Cmd
+				mm, cmd = mm.(Model).key(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}, Alt: msg.Alt})
+				cmds = append(cmds, cmd)
+			}
+			return mm, tea.Batch(cmds...)
+		}
 		return m.key(msg)
 	}
 	return m, nil
 }
+
+// sayMsg shows what a docker command is doing, once it really starts.
+type sayMsg string
 
 func (m *Model) say(text string, err error) tea.Cmd {
 	m.msgErr = err != nil
@@ -620,24 +643,34 @@ func (m *Model) jump(l link) bool {
 
 // ------------------------------------------------------------- keys
 
+// where is the section the keys work in.
+func (m Model) where() string { return secKeys[m.sec] }
+
 func (m Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	s := k.String()
+	m.which = false
+	// In a tmux popup its key closes it from the help, a question and a pick
+	// list too (a question closed this way is a "no"). Not from the palette or
+	// a prompt: there it's a letter being typed.
+	if (m.pop == popHelp || m.pop == popConfirm || m.pop == popPick) && popup.IsPopupKey(s, m.opt.PopupKey) {
+		return m, tea.Quit
+	}
 	switch m.pop {
 	case popHelp:
-		switch s {
-		case "j", "down":
-			m.helpTop++
-		case "k", "up":
-			m.helpTop = max(0, m.helpTop-1)
-		default:
+		if m.help.Key(s) {
 			m.pop = popNone
 		}
 		return m, nil
 	case popConfirm:
-		c := m.conf
-		m.pop, m.conf = popNone, nil
-		if s == "y" || s == "Y" {
-			return m, c.act
+		m.pop = popNone
+		return m, m.conf.Answer(s)
+	case popPalette:
+		act, closed := m.pal.Key(s)
+		if closed {
+			m.pop = popNone
+		}
+		if act != "" {
+			return m.run(act, 1, false)
 		}
 		return m, nil
 	case popInput:
@@ -677,32 +710,35 @@ func (m Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-	if m.filtering {
-		switch s {
-		case "esc":
-			m.filtering = false
-			m.filter.SetValue("")
-			m.filter.Blur()
-			m.clamp()
-		case "enter":
-			m.filtering = false
-			m.filter.Blur()
-		default:
-			var cmd tea.Cmd
-			m.filter, cmd = m.filter.Update(k)
-			m.sel[m.sec] = 0
-			m.clamp()
-			return m, tea.Batch(cmd, m.loadDetails())
-		}
+	if m.eng.Mode == mode.Normal && !m.eng.Waiting() && popup.IsPopupKey(s, m.opt.PopupKey) {
+		return m, tea.Quit
+	}
+	r := m.eng.Feed(s, m.where())
+	if !r.Handled { // typing in the search
+		var cmd tea.Cmd
+		m.filter, cmd = m.filter.Update(k)
+		m.sel[m.sec] = 0
+		m.clamp()
+		return m, tea.Batch(cmd, m.loadDetails())
+	}
+	if r.Pending {
+		return m, popup.WhichAfter(r.Gen)
+	}
+	if msg := r.Message(); msg != "" {
+		return m, m.say(msg, nil)
+	}
+	if r.Act == "" {
 		return m, nil
 	}
-	if m.opt.PopupKey != "" && s == m.opt.PopupKey {
+	return m.run(r.Act, r.Count, r.Counted)
+}
+
+// run does an action, from a key or the palette.
+func (m Model) run(act string, n int, counted bool) (tea.Model, tea.Cmd) {
+	switch act {
+	case keymap.ActQuit:
 		return m, tea.Quit
-	}
-	switch s {
-	case "q", "ctrl+c":
-		return m, tea.Quit
-	case "esc":
+	case keymap.ActEsc:
 		switch {
 		case m.focus == 1:
 			m.focus = 0
@@ -713,23 +749,43 @@ func (m Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		return m, nil
-	case "?":
-		m.pop, m.helpTop = popHelp, 0
+	case keymap.ActHelp:
+		m.pop, m.help = popHelp, popup.Help{}
 		return m, nil
-	case "/":
+	case keymap.ActPalette:
+		m.pop, m.pal = popPalette, popup.NewPalette(Keys, m.where())
+		return m, nil
+	case keymap.ActSearch:
 		m.filtering, m.focus = true, 0
+		m.eng.SetMode(mode.Insert)
 		return m, m.filter.Focus()
-	case "ctrl+r":
+	case "insert-done":
+		m.filtering = false
+		m.filter.Blur()
+		m.eng.SetMode(mode.Normal)
+		return m, nil
+	case keymap.ActRefresh:
 		m.usageAt = time.Time{}
 		return m, tea.Batch(m.load(), m.loadUsage(), m.loadDetails(), m.say("reloading…", nil))
-	case "tab":
+	case keymap.ActNextTab:
 		return m.setSec((m.sec + 1) % nSecs)
-	case "shift+tab":
+	case keymap.ActPrevTab:
 		return m.setSec((m.sec + nSecs - 1) % nSecs)
-	case "backspace":
+	case "sec-containers", "sec-compose", "sec-images", "sec-volumes", "sec-networks", "sec-system":
+		for i, k := range secKeys {
+			if "sec-"+k == act {
+				return m.setSec(i)
+			}
+		}
+	case "details":
+		m.focus, m.dsel = 1, 0
+		return m, nil
+	case "list":
+		m.focus = 0
+		return m, nil
+	case "back":
 		if m.focus == 1 && m.sec == secContainers && m.sub == subFiles && m.fileDir != "/" {
-			c := m.curContainer()
-			if c != nil {
+			if c := m.curContainer(); c != nil {
 				return m, m.listFiles(c.ID, path.Dir(m.fileDir))
 			}
 		}
@@ -740,56 +796,129 @@ func (m Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, m.loadDetails()
 		}
 		return m, nil
-	}
-	if m.sec == secContainers {
-		if n, err := strconv.Atoi(s); err == nil && n >= 1 && n <= len(subNames) {
-			m.sub, m.dsel = n-1, 0
-			if m.sub == subLogs {
-				m.dsel = 1 << 30 // the newest line
-			}
-			return m, m.loadDetails()
-		}
-	}
-	if m.focus == 1 {
-		if mm, cmd, ok := m.detailKey(s); ok {
-			return mm, cmd
-		}
-	} else {
-		switch s {
-		case "j", "down":
-			return m.moveSel(1)
-		case "k", "up":
-			return m.moveSel(-1)
-		case "home", "g":
-			return m.moveSel(-1 << 20)
-		case "end", "G":
-			return m.moveSel(1 << 20)
-		case "ctrl+d", "pgdown":
-			return m.moveSel(max(1, m.h/3))
-		case "ctrl+u", "pgup":
-			return m.moveSel(-max(1, m.h/3))
-		case "enter":
-			m.focus, m.dsel = 1, 0
+	case "copy-name", "copy-id":
+		name, id := m.selected()
+		if name == "" {
 			return m, nil
 		}
+		if act == "copy-id" {
+			if id == "" {
+				return m, m.say(name+" has no ID of its own", nil)
+			}
+			return m, copyText(id)
+		}
+		return m, copyText(name)
+	case "prune-menu":
+		return m.pruneMenu()
+	}
+	if strings.HasPrefix(act, "sub-") && m.sec == secContainers {
+		m.sub, m.dsel = int(act[4]-'1'), 0
+		if m.sub == subLogs {
+			m.dsel = 1 << 30 // the newest line
+		}
+		return m, m.loadDetails()
+	}
+	if mm, cmd, ok := m.move(act, n, counted); ok {
+		return mm, cmd
+	}
+	if act == "enter" {
+		if m.focus == 1 {
+			mm, cmd, _ := m.detailKey("enter")
+			return mm, cmd
+		}
+		m.focus, m.dsel = 1, 0
+		return m, nil
 	}
 	switch m.sec {
 	case secContainers:
-		return m.containerKey(s)
+		return m.containerKey(act)
 	case secCompose:
-		return m.composeKey(s)
+		return m.composeKey(act)
 	case secImages:
-		return m.imageKey(s)
+		return m.imageKey(act)
 	case secVolumes:
-		return m.volumeKey(s)
+		return m.volumeKey(act)
 	case secNetworks:
-		return m.networkKey(s)
-	case secSystem:
-		if s == "P" {
-			return m.pruneMenu()
-		}
+		return m.networkKey(act)
 	}
 	return m, nil
+}
+
+// move moves the cursor in the list, or in the details pane when it has
+// focus.
+func (m Model) move(act string, n int, counted bool) (tea.Model, tea.Cmd, bool) {
+	page := max(1, m.h/3)
+	if m.focus == 1 {
+		key := map[string]string{keymap.ActDown: "j", keymap.ActUp: "k", keymap.ActTop: "g", keymap.ActBottom: "G",
+			keymap.ActHalfDown: "ctrl+d", keymap.ActHalfUp: "ctrl+u"}[act]
+		if key == "" {
+			return m, nil, false
+		}
+		if counted && (act == keymap.ActTop || act == keymap.ActBottom) {
+			m.dsel = max(0, min(m.detailRows()-1, n-1))
+			return m, nil, true
+		}
+		var cmd tea.Cmd
+		var mm tea.Model = m
+		for i := 0; i < n; i++ {
+			mm, cmd, _ = mm.(Model).detailKey(key)
+		}
+		return mm, cmd, true
+	}
+	switch act {
+	case keymap.ActDown:
+		mm, cmd := m.moveSel(n)
+		return mm, cmd, true
+	case keymap.ActUp:
+		mm, cmd := m.moveSel(-n)
+		return mm, cmd, true
+	case keymap.ActTop, keymap.ActBottom:
+		if counted {
+			m.sel[m.sec] = 0
+			mm, cmd := m.moveSel(n - 1)
+			return mm, cmd, true
+		}
+		d := -1 << 20
+		if act == keymap.ActBottom {
+			d = 1 << 20
+		}
+		mm, cmd := m.moveSel(d)
+		return mm, cmd, true
+	case keymap.ActHalfDown:
+		mm, cmd := m.moveSel(page)
+		return mm, cmd, true
+	case keymap.ActHalfUp:
+		mm, cmd := m.moveSel(-page)
+		return mm, cmd, true
+	}
+	return m, nil, false
+}
+
+// selected is the selected row's name and ID, for copying.
+func (m Model) selected() (name, id string) {
+	switch m.sec {
+	case secContainers:
+		if c := m.curContainer(); c != nil {
+			return c.Name, c.ID
+		}
+	case secCompose:
+		if p := m.curProject(); p != nil {
+			return p.Name, ""
+		}
+	case secImages:
+		if im := m.curImage(); im != nil {
+			return im.Ref(), im.ID
+		}
+	case secVolumes:
+		if v := m.curVolume(); v != nil {
+			return v.Name, ""
+		}
+	case secNetworks:
+		if n := m.curNetwork(); n != nil {
+			return n.Name, n.ID
+		}
+	}
+	return "", ""
 }
 
 func (m Model) setSec(s int) (tea.Model, tea.Cmd) {
@@ -892,9 +1021,10 @@ func (m Model) inspectLines(c *dock.Container) []string {
 // ------------------------------------------------------------- actions
 
 // docker runs a docker command in the background, saying what it does.
-func (m *Model) docker(doing, done string, args ...string) tea.Cmd {
-	m.busy = doing
-	return tea.Batch(m.say(doing+"…", nil), func() tea.Msg {
+// It says "doing…" only when it runs: a confirm holds it until y, and a
+// "no" must not leave "removing x…" on the screen.
+func (m Model) docker(doing, done string, args ...string) tea.Cmd {
+	return tea.Sequence(func() tea.Msg { return sayMsg(doing) }, func() tea.Msg {
 		if _, err := dock.Run(context.Background(), args...); err != nil {
 			return doneMsg{err: fmt.Errorf("%s: %v", doing, err)}
 		}
@@ -939,7 +1069,7 @@ func (m *Model) ask(title string, body []string, yes, color string, act tea.Cmd)
 	if color == "" {
 		color = m.st.T.Red
 	}
-	m.conf = &confirm{title: title, body: body, yes: yes, color: color, act: act}
+	m.conf = popup.Confirm{Title: title, Body: strings.Join(body, "\n"), YesText: yes, Color: color, Act: act}
 	m.pop = popConfirm
 }
 
@@ -960,14 +1090,14 @@ func (m Model) containerKey(s string) (tea.Model, tea.Cmd) {
 	}
 	id, name := c.ID, c.Name
 	switch s {
-	case "s":
+	case "start-stop":
 		if c.Running() {
 			return m, m.docker("stopping "+name, "stopped "+name, "stop", id)
 		}
 		return m, m.docker("starting "+name, "started "+name, "start", id)
-	case "r":
+	case "restart":
 		return m, m.docker("restarting "+name, "restarted "+name, "restart", id)
-	case "p":
+	case "pause":
 		if c.State == "paused" {
 			return m, m.docker("unpausing "+name, "unpaused "+name, "unpause", id)
 		}
@@ -975,21 +1105,21 @@ func (m Model) containerKey(s string) (tea.Model, tea.Cmd) {
 			return m, m.say(name+" isn't running", nil)
 		}
 		return m, m.docker("pausing "+name, "paused "+name, "pause", id)
-	case "e":
+	case "shell":
 		if c.State != "running" {
-			return m, m.say(name+" isn't running: s starts it", nil)
+			return m, m.say(name+" isn't running: x starts it", nil)
 		}
 		return m, interactive(false, "docker", "exec", "-it", id, "sh", "-c", "command -v bash >/dev/null 2>&1 && exec bash || exec sh")
-	case "l":
+	case "logs":
 		return m, interactive(false, "docker", "logs", "-f", "--tail", "300", id)
-	case "o":
+	case "open-port":
 		for _, p := range c.Published {
 			if p.Proto == "tcp" {
 				return m, openURL(fmt.Sprintf("http://localhost:%d", p.HostPort))
 			}
 		}
 		return m, m.say(name+" publishes no port", nil)
-	case "d":
+	case "remove":
 		args := []string{"rm", id}
 		body := []string{c.Image + " · " + c.Status}
 		if c.Running() {
@@ -1007,12 +1137,12 @@ func (m Model) containerKey(s string) (tea.Model, tea.Cmd) {
 		}
 		m.ask("remove "+name+"?", body, "remove the container", "", m.docker("removing "+name, "removed "+name, args...))
 		return m, nil
-	case "v":
+	case "secrets":
 		m.reveal = !m.reveal
 		return m, nil
-	case "c":
+	case "copy-file":
 		if m.sub != subFiles || m.dsel >= len(m.files) {
-			return m, m.say("pick a file in Files (6) first", nil)
+			return m, m.say("pick a file in Files (6, or Space t f) first", nil)
 		}
 		f := m.files[m.dsel]
 		src := path.Join(m.fileDir, f.Name)
@@ -1051,23 +1181,23 @@ func (m Model) composeKey(s string) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	switch s {
-	case "u":
+	case "up":
 		return m, interactive(true, m.composeArgs(p, "up", "-d")...)
-	case "d":
+	case "down":
 		m.ask("take "+p.Name+" down?", []string{
 			fmt.Sprintf("docker compose down: its %d containers are stopped and removed, and its networks.", p.All),
-			"Volumes stay (their data is kept); u brings it back up."}, "take it down", m.st.T.Peach,
+			"Volumes stay (their data is kept); Space p u brings it back up."}, "take it down", m.st.T.Peach,
 			interactive(true, m.composeArgs(p, "down")...))
 		return m, nil
-	case "r":
+	case "restart":
 		return m, interactive(true, m.composeArgs(p, "restart")...)
-	case "b":
+	case "build":
 		return m, interactive(true, m.composeArgs(p, "build")...)
-	case "p":
+	case "pull":
 		return m, interactive(true, m.composeArgs(p, "pull")...)
-	case "l":
+	case "logs":
 		return m, interactive(false, m.composeArgs(p, "logs", "-f", "--tail", "100")...)
-	case "e":
+	case "edit":
 		if len(p.ConfigFiles) == 0 {
 			return m, m.say("its compose file isn't known", nil)
 		}
@@ -1080,7 +1210,7 @@ func (m Model) composeKey(s string) (tea.Model, tea.Cmd) {
 		}
 		delete(m.compose, p.Name)
 		return m, interactive(false, ed, p.ConfigFiles[0])
-	case "y":
+	case "yaml":
 		m.showYAML = !m.showYAML
 		m.dsel = 0
 		return m, nil
@@ -1095,7 +1225,7 @@ func (m Model) imageKey(s string) (tea.Model, tea.Cmd) {
 	}
 	ref := im.Ref()
 	switch s {
-	case "r":
+	case "run":
 		name := strings.ReplaceAll(strings.ReplaceAll(imageBase(im.Repo), "/", "-"), ":", "-")
 		cmd := m.prompt("run "+ref, "docker run options before the image; Enter runs it", "-d --name "+name+" ", func(v string) tea.Cmd {
 			args := append([]string{"docker", "run"}, strings.Fields(v)...)
@@ -1103,16 +1233,16 @@ func (m Model) imageKey(s string) (tea.Model, tea.Cmd) {
 			return interactive(true, args...)
 		})
 		return m, cmd
-	case "p":
+	case "pull":
 		if im.Dangling {
 			return m, m.say("an untagged image can't be pulled", nil)
 		}
 		return m, interactive(true, "docker", "pull", ref)
-	case "H":
+	case "layers":
 		m.layers = !m.layers
 		m.dsel = 0
 		return m, m.loadDetails()
-	case "d":
+	case "remove":
 		users := m.containersUsing("", im.ID)
 		if len(users) > 0 {
 			var names []string
@@ -1124,7 +1254,7 @@ func (m Model) imageKey(s string) (tea.Model, tea.Cmd) {
 		m.ask("remove "+ref+"?", []string{im.Size + " · made " + im.Created, "docker pull (or a build) brings it back."}, "remove the image", "",
 			m.docker("removing "+ref, "removed "+ref, "rmi", im.ID))
 		return m, nil
-	case "P":
+	case "prune":
 		var n int
 		for _, x := range m.snap.Images {
 			if x.Dangling && len(m.containersUsing("", x.ID)) == 0 {
@@ -1145,11 +1275,11 @@ func imageBase(repo string) string {
 func (m Model) volumeKey(s string) (tea.Model, tea.Cmd) {
 	v := m.curVolume()
 	switch s {
-	case "n":
+	case "create":
 		return m, m.prompt("new volume", "its name", "", func(name string) tea.Cmd {
 			return m.dockerCmd("creating "+name, "created volume "+name, "volume", "create", name)
 		})
-	case "P":
+	case "prune":
 		var unused []string
 		for _, x := range m.snap.Volumes {
 			if len(m.containersUsing(x.Name, "")) == 0 {
@@ -1172,9 +1302,9 @@ func (m Model) volumeKey(s string) (tea.Model, tea.Cmd) {
 	}
 	name := v.Name
 	switch s {
-	case "f":
+	case "browse":
 		return m, interactive(false, "docker", "run", "--rm", "-it", "-v", name+":/volume", "-w", "/volume", "alpine", "sh")
-	case "d":
+	case "remove":
 		users := m.containersUsing(name, "")
 		if len(users) > 0 {
 			var names []string
@@ -1207,11 +1337,11 @@ func (m Model) dockerCmd(doing, done string, args ...string) tea.Cmd {
 func (m Model) networkKey(s string) (tea.Model, tea.Cmd) {
 	n := m.curNetwork()
 	switch s {
-	case "n":
+	case "create":
 		return m, m.prompt("new network", "its name (a bridge network)", "", func(name string) tea.Cmd {
 			return m.dockerCmd("creating "+name, "created network "+name, "network", "create", name)
 		})
-	case "P":
+	case "prune":
 		m.ask("remove unused networks?", []string{"Networks no container is on (docker network prune). bridge, host and none stay."}, "remove them", m.st.T.Peach,
 			m.docker("pruning networks", "removed unused networks", "network", "prune", "-f"))
 		return m, nil
@@ -1221,7 +1351,7 @@ func (m Model) networkKey(s string) (tea.Model, tea.Cmd) {
 	}
 	name := n.Name
 	switch s {
-	case "c":
+	case "connect":
 		on := map[string]bool{}
 		for _, c := range n.Containers {
 			on[c.Name] = true
@@ -1242,7 +1372,7 @@ func (m Model) networkKey(s string) (tea.Model, tea.Cmd) {
 		}}
 		m.pop = popPick
 		return m, nil
-	case "x":
+	case "disconnect":
 		if len(n.Containers) == 0 {
 			return m, m.say("no container is on "+name, nil)
 		}
@@ -1255,12 +1385,12 @@ func (m Model) networkKey(s string) (tea.Model, tea.Cmd) {
 		}}
 		m.pop = popPick
 		return m, nil
-	case "d":
+	case "remove":
 		if n.Builtin() {
 			return m, m.say(name+" is Docker's own: it can't be removed", nil)
 		}
 		if len(n.Containers) > 0 {
-			return m, m.say(fmt.Sprintf("%d containers are on %s: x disconnects them", len(n.Containers), name), nil)
+			return m, m.say(fmt.Sprintf("%d containers are on %s: Space d c disconnects them", len(n.Containers), name), nil)
 		}
 		m.ask("remove "+name+"?", []string{n.Driver + " · " + n.Subnet + " · no container on it."}, "remove the network", m.st.T.Peach,
 			m.docker("removing "+name, "removed network "+name, "network", "rm", n.ID))
@@ -1330,4 +1460,34 @@ func tilde(p string) string {
 		return "~" + p[len(h):]
 	}
 	return p
+}
+
+// copyText puts text on the clipboard: Wayland's, X's, and tmux's (which
+// passes it on to the terminal).
+func copyText(t string) tea.Cmd {
+	return func() tea.Msg {
+		ok := false
+		try := func(name string, args ...string) {
+			if _, err := exec.LookPath(name); err != nil {
+				return
+			}
+			c := exec.Command(name, args...)
+			c.Stdin = strings.NewReader(t)
+			if c.Run() == nil {
+				ok = true
+			}
+		}
+		if os.Getenv("WAYLAND_DISPLAY") != "" {
+			try("wl-copy")
+		} else if os.Getenv("DISPLAY") != "" {
+			try("xclip", "-selection", "clipboard")
+		}
+		if os.Getenv("TMUX") != "" {
+			try("tmux", "load-buffer", "-w", "-")
+		}
+		if !ok {
+			return doneMsg{err: fmt.Errorf("no clipboard tool (wl-copy, xclip or tmux)")}
+		}
+		return doneMsg{text: "copied " + t}
+	}
 }

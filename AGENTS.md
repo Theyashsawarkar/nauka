@@ -9,15 +9,19 @@ plugin, but must work on any Linux setup without Vayu: no hardcoded paths,
 Vayu-specific behaviour only through the `@nauka-*` options.
 
 - Layout: `internal/dock` runs docker and parses its JSON; `internal/tui`
-  the screen (`model.go` state, keys and actions, `views.go` drawing);
-  `internal/ui` the drawing kit shared in look with narada and pattan.
-- Keys live in `internal/tui/keys.go`. After adding, changing or removing
-  one: `go test ./internal/tui -update` (rewrites `scripts/keybindings`,
-  which Vayu's keybinding search reads), and update the README's keys.
-  Descriptions start with a verb the search knows.
+  the screen (`model.go` state, keys and actions, `views.go` drawing).
+  The drawing kit (`ui`), the key engine (`keymap`) and the popups (help,
+  palette, which-key, confirm) come from github.com/Theyashsawarkar/vyakarana,
+  shared with pattan, vaikhari and darshan.
+- Keys follow the shared vim grammar (vyakarana's README): NORMAL / INSERT,
+  `Space` leader with reserved groups. They live as data in
+  `internal/tui/keys.go`. After adding, changing or removing one:
+  `go test ./internal/tui -update` (rewrites `scripts/keybindings`, which
+  Vayu's keybinding search reads, and the README's key tables between the
+  `<!-- keys -->` markers). Descriptions start with a verb the search knows.
 - Anything that deletes asks first (`m.ask`) and says what is lost; a
   volume or image still in use is never removed. Env values of
-  secret-looking keys stay hidden until `v`.
+  secret-looking keys stay hidden until `Space u s`.
 - The README documents every feature, key, option and command: a change to
   any of them updates it. Every change gets a CHANGELOG.md entry; releases
   are tags (`vX.Y.Z`) with `Version` in cmd/nauka/main.go bumped to match.

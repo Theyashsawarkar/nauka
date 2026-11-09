@@ -85,37 +85,154 @@ its own section, and Backspace comes back.
 Anything that deletes asks first and says what goes (a volume's size, the
 containers a down removes, how much a prune frees). A volume or image a
 container still uses isn't removed: nauka says which containers to remove
-first. Secrets in Env are hidden until you ask.
+first. Secrets in Env are hidden until you ask (`Space u s`).
 
 ## Keys
 
-| Key | Does |
+nauka uses the vim grammar every Vayu tool shares
+([vyakarana](https://github.com/Theyashsawarkar/vyakarana)): in NORMAL,
+keys are commands and typing changes nothing; `/` starts INSERT to search
+(`Esc` goes back and keeps it). `H` / `L` switch sections, `h` / `l` move
+between the list and the details, `dd` removes (asks first; only `y`
+says yes). `Space` is the leader: press it and a box lists what can
+follow. `Space c` acts on a container, `Space p` on a compose project,
+`Space i` on an image, `Space a` creates, `Space d` removes or prunes,
+`Space u` toggles a view, `Space y` copies, `Space t` switches sections
+and details. `Space Space` searches every action, `?` shows every key.
+Counts work (`5j`, `3gg`).
+
+Keys that moved say where they went for one release: on a container `s`
+→ `x`, `p` → `Space c p`, `e` → `Space c x`, `v` → `Space u s`, `c` →
+`Space y f`; in Compose `u` → `Space p u`, `p` → `Space p p`, `e` →
+`Space e c`; on an image `p` → `Space i p`; on a volume `f` → `Space o t`,
+`n` → `Space a v`; on a network `c` → `Space a c`, `x` → `Space d c`, `n`
+→ `Space a n`. `r` reloads now (restart is `Space c r` / `Space p r`, run
+an image `Space i r`), `y` copies the name (the compose file is
+`Space u y`), `l` focuses the details (logs are `Space c l`), `H` is the
+previous section (layers are `Space u l`). `b` (build) and `P` (prune)
+still work.
+
+<!-- keys: generated from the keymap; run the tests with -update -->
+**Everywhere**
+
+| Keys | What it does |
 |---|---|
-| `j` / `k`, `Home` / `End`, `Ctrl+d` / `Ctrl+u` | Move |
-| `Tab` / `Shift+Tab` | Switch section |
-| `Enter` | Focus the details; on a link, jump to it |
-| `Backspace` | Go back where you jumped from (up a folder in Files) |
-| `Esc` | Leave the details, clear the search, or quit |
-| `/` | Search the list |
-| `Ctrl+r` | Reload now (it reloads every 2 s) |
-| `?` | Show every key |
-| `q` | Quit |
+| <kbd>j</kbd> or <kbd>Down</kbd> | Move to the next row |
+| <kbd>k</kbd> or <kbd>Up</kbd> | Move to the previous row |
+| <kbd>g</kbd> <kbd>g</kbd> or <kbd>Home</kbd> | Jump to the first row (5gg: the fifth) |
+| <kbd>G</kbd> or <kbd>End</kbd> | Jump to the last row (5G: the fifth) |
+| <kbd>Ctrl+d</kbd> or <kbd>PgDn</kbd> | Scroll half a page down |
+| <kbd>Ctrl+u</kbd> or <kbd>PgUp</kbd> | Scroll half a page up |
+| <kbd>/</kbd> or <kbd>Space</kbd> <kbd>f</kbd> <kbd>f</kbd> | Search the list (filters it) |
+| <kbd>r</kbd> or <kbd>Space</kbd> <kbd>r</kbd> | Reload everything now (it also reloads every 2 s) |
+| <kbd>?</kbd> or <kbd>Space</kbd> <kbd>?</kbd> | Show every key of this view |
+| <kbd>q</kbd> or <kbd>Space</kbd> <kbd>q</kbd> | Quit |
+| <kbd>Esc</kbd> | Go back one step: clear the filter, then quit |
+| <kbd>L</kbd> or <kbd>Tab</kbd> | Switch to the next section (Containers, Compose, Images, Volumes, Networks, System) |
+| <kbd>H</kbd> or <kbd>Shift+Tab</kbd> | Switch to the previous section |
+| <kbd>l</kbd> | Focus the details pane |
+| <kbd>h</kbd> | Focus the list (leave the details pane) |
+| <kbd>Enter</kbd> | Focus the details pane; in it, jump to the volume, network or container under the cursor |
+| <kbd>Backspace</kbd> or <kbd>Ctrl+o</kbd> | Go back to where Enter jumped from (or up a folder in Files) |
+| <kbd>y</kbd> or <kbd>Space</kbd> <kbd>y</kbd> <kbd>n</kbd> | Copy the name of the selected row |
+| <kbd>Space</kbd> <kbd>Space</kbd> | Search every action and run one (the palette) |
+| <kbd>Space</kbd> <kbd>t</kbd> | *Tabs…* |
+| <kbd>Space</kbd> <kbd>t</kbd> <kbd>c</kbd> | Switch to Containers |
+| <kbd>Space</kbd> <kbd>t</kbd> <kbd>p</kbd> | Switch to Compose |
+| <kbd>Space</kbd> <kbd>t</kbd> <kbd>i</kbd> | Switch to Images |
+| <kbd>Space</kbd> <kbd>t</kbd> <kbd>v</kbd> | Switch to Volumes |
+| <kbd>Space</kbd> <kbd>t</kbd> <kbd>n</kbd> | Switch to Networks |
+| <kbd>Space</kbd> <kbd>t</kbd> <kbd>s</kbd> | Switch to System |
+| <kbd>Space</kbd> <kbd>y</kbd> | *Copy…* |
+| <kbd>Space</kbd> <kbd>y</kbd> <kbd>i</kbd> | Copy the ID of the selected row |
+| | *While typing* |
+| <kbd>Esc</kbd> | Stop typing and keep the search (back to NORMAL) |
+| <kbd>Ctrl+j</kbd> or <kbd>Down</kbd> | Move to the next row while typing |
+| <kbd>Ctrl+k</kbd> or <kbd>Up</kbd> | Move to the previous row while typing |
 
-Containers: `s` start/stop · `r` restart · `p` pause/unpause · `e` shell
-(bash, else sh) · `l` follow logs · `o` open its published port in the
-browser · `d` remove · `1`–`6` details · `v` show secrets in Env · `c`
-copy a file out (Files).
+**Containers**
 
-Compose: `u` up · `d` down · `r` restart · `b` build · `p` pull · `l`
-logs · `e` edit · `y` compose file.
+| Keys | What it does |
+|---|---|
+| <kbd>1</kbd> or <kbd>Space</kbd> <kbd>t</kbd> <kbd>o</kbd> | Switch the details to Overview |
+| <kbd>2</kbd> or <kbd>Space</kbd> <kbd>t</kbd> <kbd>l</kbd> | Switch the details to Logs |
+| <kbd>3</kbd> or <kbd>Space</kbd> <kbd>t</kbd> <kbd>a</kbd> | Switch the details to Stats |
+| <kbd>4</kbd> or <kbd>Space</kbd> <kbd>t</kbd> <kbd>e</kbd> | Switch the details to Env |
+| <kbd>5</kbd> or <kbd>Space</kbd> <kbd>t</kbd> <kbd>j</kbd> | Switch the details to Inspect (the JSON) |
+| <kbd>6</kbd> or <kbd>Space</kbd> <kbd>t</kbd> <kbd>f</kbd> | Switch the details to Files |
+| <kbd>x</kbd> or <kbd>Space</kbd> <kbd>c</kbd> <kbd>s</kbd> | Start or stop the container |
+| <kbd>o</kbd> or <kbd>Space</kbd> <kbd>o</kbd> <kbd>b</kbd> | Open the container's published port in the browser |
+| <kbd>d</kbd> <kbd>d</kbd> or <kbd>Space</kbd> <kbd>d</kbd> <kbd>d</kbd> | Remove the container (asks first) |
+| <kbd>Space</kbd> <kbd>c</kbd> | *Container…* |
+| <kbd>Space</kbd> <kbd>c</kbd> <kbd>r</kbd> | Restart the container |
+| <kbd>Space</kbd> <kbd>c</kbd> <kbd>p</kbd> | Pause or unpause the container |
+| <kbd>Space</kbd> <kbd>c</kbd> <kbd>l</kbd> | Follow the container's logs full screen (Ctrl+c comes back) |
+| <kbd>Space</kbd> <kbd>c</kbd> <kbd>x</kbd> or <kbd>Space</kbd> <kbd>o</kbd> <kbd>t</kbd> | Open a shell inside the container (bash, else sh) |
+| <kbd>Space</kbd> <kbd>u</kbd> | *Toggles…* |
+| <kbd>Space</kbd> <kbd>u</kbd> <kbd>s</kbd> | Toggle showing secret values in Env |
+| <kbd>Space</kbd> <kbd>y</kbd> | *Copy…* |
+| <kbd>Space</kbd> <kbd>y</kbd> <kbd>f</kbd> | Copy the selected file out of the container to ~/Downloads (Files) |
 
-Images: `r` run · `p` pull · `H` layers · `d` remove · `P` prune dangling.
+**Compose**
 
-Volumes: `f` browse · `n` new · `d` remove · `P` prune unused.
+| Keys | What it does |
+|---|---|
+| <kbd>Space</kbd> <kbd>e</kbd> | *Edit…* |
+| <kbd>Space</kbd> <kbd>e</kbd> <kbd>c</kbd> | Edit the compose file in $EDITOR |
+| <kbd>Space</kbd> <kbd>p</kbd> | *Compose project…* |
+| <kbd>Space</kbd> <kbd>p</kbd> <kbd>u</kbd> | Start the compose project (docker compose up -d) |
+| <kbd>Space</kbd> <kbd>p</kbd> <kbd>d</kbd> or <kbd>d</kbd> <kbd>d</kbd> | Stop and remove the compose project's containers (docker compose down; asks first) |
+| <kbd>Space</kbd> <kbd>p</kbd> <kbd>r</kbd> | Restart the compose project |
+| <kbd>Space</kbd> <kbd>p</kbd> <kbd>b</kbd> or <kbd>b</kbd> | Build the compose project's images |
+| <kbd>Space</kbd> <kbd>p</kbd> <kbd>p</kbd> | Pull the compose project's images |
+| <kbd>Space</kbd> <kbd>p</kbd> <kbd>l</kbd> | Follow the logs of every service of the project |
+| <kbd>Space</kbd> <kbd>u</kbd> | *Toggles…* |
+| <kbd>Space</kbd> <kbd>u</kbd> <kbd>y</kbd> | Toggle the details between the services and the compose file |
 
-Networks: `c` connect · `x` disconnect · `n` new · `d` remove · `P` prune.
+**Images**
 
-System: `P` prune (pick what).
+| Keys | What it does |
+|---|---|
+| <kbd>d</kbd> <kbd>d</kbd> or <kbd>Space</kbd> <kbd>d</kbd> <kbd>d</kbd> | Remove the image (asks first) |
+| <kbd>Space</kbd> <kbd>d</kbd> | *Delete…* |
+| <kbd>Space</kbd> <kbd>d</kbd> <kbd>p</kbd> or <kbd>P</kbd> | Remove dangling images (docker image prune; asks first) |
+| <kbd>Space</kbd> <kbd>i</kbd> | *Image…* |
+| <kbd>Space</kbd> <kbd>i</kbd> <kbd>r</kbd> | Run a container from the image (asks for the options) |
+| <kbd>Space</kbd> <kbd>i</kbd> <kbd>p</kbd> | Pull a newer copy of the image |
+| <kbd>Space</kbd> <kbd>u</kbd> | *Toggles…* |
+| <kbd>Space</kbd> <kbd>u</kbd> <kbd>l</kbd> | Toggle the image's layers (docker history) |
+
+**Volumes**
+
+| Keys | What it does |
+|---|---|
+| <kbd>d</kbd> <kbd>d</kbd> or <kbd>Space</kbd> <kbd>d</kbd> <kbd>d</kbd> | Remove the volume (asks first; not while a container uses it) |
+| <kbd>Space</kbd> <kbd>a</kbd> | *Add…* |
+| <kbd>Space</kbd> <kbd>a</kbd> <kbd>v</kbd> | Create a volume |
+| <kbd>Space</kbd> <kbd>d</kbd> | *Delete…* |
+| <kbd>Space</kbd> <kbd>d</kbd> <kbd>p</kbd> or <kbd>P</kbd> | Remove unused volumes (docker volume prune; asks first) |
+| <kbd>Space</kbd> <kbd>o</kbd> | *Open…* |
+| <kbd>Space</kbd> <kbd>o</kbd> <kbd>t</kbd> | Open a shell in the volume's files (a throwaway alpine container) |
+
+**Networks**
+
+| Keys | What it does |
+|---|---|
+| <kbd>d</kbd> <kbd>d</kbd> or <kbd>Space</kbd> <kbd>d</kbd> <kbd>d</kbd> | Remove the network (asks first) |
+| <kbd>Space</kbd> <kbd>a</kbd> | *Add…* |
+| <kbd>Space</kbd> <kbd>a</kbd> <kbd>c</kbd> | Connect a container to the network |
+| <kbd>Space</kbd> <kbd>a</kbd> <kbd>n</kbd> | Create a network |
+| <kbd>Space</kbd> <kbd>d</kbd> | *Delete…* |
+| <kbd>Space</kbd> <kbd>d</kbd> <kbd>c</kbd> | Disconnect a container from the network |
+| <kbd>Space</kbd> <kbd>d</kbd> <kbd>p</kbd> or <kbd>P</kbd> | Remove unused networks (docker network prune; asks first) |
+
+**System**
+
+| Keys | What it does |
+|---|---|
+| <kbd>Space</kbd> <kbd>d</kbd> | *Delete…* |
+| <kbd>Space</kbd> <kbd>d</kbd> <kbd>P</kbd> or <kbd>P</kbd> | Remove what you pick: stopped containers, images, volumes, networks, build cache, everything (asks first) |
+<!-- /keys -->
 
 ## Install
 

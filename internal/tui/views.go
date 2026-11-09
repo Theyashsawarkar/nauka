@@ -9,7 +9,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/Theyashsawarkar/nauka/internal/dock"
-	"github.com/Theyashsawarkar/nauka/internal/ui"
+	"github.com/Theyashsawarkar/vyakarana/popup"
+	"github.com/Theyashsawarkar/vyakarana/ui"
 )
 
 func (m Model) View() string {
@@ -59,15 +60,11 @@ func (m Model) View() string {
 	var box []string
 	switch m.pop {
 	case popHelp:
-		box = m.helpBox(bh)
+		box = m.help.Box(st, Keys, m.where(), m.w, bh)
+	case popPalette:
+		box = m.pal.Box(st, m.w, bh)
 	case popConfirm:
-		w := min(m.w-4, 76)
-		var lines []string
-		for _, b := range m.conf.body {
-			lines = append(lines, ui.Wrap(b, w-4)...)
-		}
-		lines = append(lines, "", st.Key("y", m.conf.yes)+"   "+st.Key("n", "keep it"))
-		box = st.Popup(m.conf.title, lines, w, m.conf.color)
+		box = m.conf.Box(st, m.w)
 	case popInput:
 		w := min(m.w-4, 80)
 		in := m.input.in
@@ -89,6 +86,10 @@ func (m Model) View() string {
 	}
 	if box != nil {
 		body = ui.Overlay(body, box, m.w, max(0, (bh-len(box))/2))
+	} else if m.which {
+		if wk := popup.WhichKey(st, m.eng.Pending(), m.eng.Hints(m.where()), m.w); len(wk) > 0 {
+			body = ui.Overlay(body, wk, m.w, max(0, bh-len(wk)-1))
+		}
 	}
 	rows = append(rows, body, m.footer())
 	return strings.Join(rows, "\n")
@@ -234,7 +235,7 @@ func (m Model) list(w, h int) (string, []string) {
 			}
 		}
 		if len(vs) == 0 {
-			return "Volumes", m.empty("No volumes. n creates one.", w)
+			return "Volumes", m.empty("No volumes. Space a v creates one.", w)
 		}
 		return fmt.Sprintf("Volumes · %d%s", len(vs), total), m.table([]ui.Column{{Title: "name", Width: 0}, {Title: "size", Width: 9},
 			{Title: "used by", Width: 24}}, rows, w, h)
@@ -504,7 +505,7 @@ func (m Model) containerDetails(w, h int) (string, []string) {
 		for _, e := range c.Env {
 			k, v, _ := strings.Cut(e, "=")
 			if secretKey.MatchString(k) && !m.reveal {
-				v = st.Muted.Render("•••••••• (v shows it)")
+				v = st.Muted.Render("•••••••• (Space u s shows it)")
 			}
 			lines = append(lines, st.Accent.Render(k)+"="+v)
 		}
@@ -512,7 +513,7 @@ func (m Model) containerDetails(w, h int) (string, []string) {
 	case subInspect:
 		out = append(out, m.scrolled(m.inspectLines(c), room, false)...)
 	case subFiles:
-		out[1] = st.Bold.Render(m.fileDir) + st.Muted.Render("  enter opens a folder · backspace goes up · c copies to ~/Downloads")
+		out[1] = st.Bold.Render(m.fileDir) + st.Muted.Render("  enter opens a folder · backspace goes up · Space y f copies to ~/Downloads")
 		if m.fileErr != "" {
 			out = append(out, st.Muted.Render(m.fileErr))
 			break
@@ -586,14 +587,14 @@ func (m Model) projectDetails(w, h int) (string, []string) {
 	out := st.KV([][2]string{{"folder", tilde(p.WorkDir)}, {"file", strings.Join(files, ", ")},
 		{"running", fmt.Sprintf("%d of %d services", p.Running, p.All)}}, 8)
 	if m.showYAML {
-		out = append(out, "", st.Heading(strings.Join(files, ", "))+st.Muted.Render("  y shows the services"))
+		out = append(out, "", st.Heading(strings.Join(files, ", "))+st.Muted.Render("  Space u y shows the services"))
 		var lines []string
 		for _, l := range m.compose[p.Name] {
 			lines = append(lines, yamlLine(st, l))
 		}
 		return p.Name, append(out, m.scrolled(lines, h-len(out)-2, false)...)
 	}
-	out = append(out, "", st.Heading("services")+st.Muted.Render("  y shows the compose file"))
+	out = append(out, "", st.Heading("services")+st.Muted.Render("  Space u y shows the compose file"))
 	i := 0
 	for _, c := range m.snap.Containers {
 		if c.Project != p.Name {
@@ -606,7 +607,7 @@ func (m Model) projectDetails(w, h int) (string, []string) {
 		out = append(out, m.linkLine(i, dot+" "+st.Bold.Render(ui.Fit(c.Service, 14))+" "+st.Sub.Render(ui.Fit(c.Image, 24))+" "+st.Muted.Render(c.Status)))
 		i++
 	}
-	out = append(out, "", st.Muted.Render("u up · d down · r restart · b build · p pull · l logs · e edit the file"))
+	out = append(out, "", st.Muted.Render("Space p: u up · d down · r restart · b build · p pull · l logs · Space e c edits the file"))
 	return p.Name, out
 }
 
@@ -641,7 +642,7 @@ func (m Model) imageDetails(w, h int) (string, []string) {
 	}
 	out := st.KV(kv, 9)
 	if m.layers && ok {
-		out = append(out, "", st.Heading("layers (docker history)")+st.Muted.Render("  H hides them"))
+		out = append(out, "", st.Heading("layers (docker history)")+st.Muted.Render("  Space u l hides them"))
 		var lines []string
 		for _, l := range d.Layers {
 			lines = append(lines, ui.Fit(l, w))
@@ -663,7 +664,7 @@ func (m Model) imageDetails(w, h int) (string, []string) {
 	if ok && len(d.Tags) > 0 {
 		out = append(out, "", st.Heading("tags"), "  "+strings.Join(d.Tags, " · "))
 	}
-	out = append(out, "", st.Muted.Render("r run · p pull newer · H layers · d remove · P prune dangling"))
+	out = append(out, "", st.Muted.Render("Space i r run · Space i p pull newer · Space u l layers · dd remove · P prune dangling"))
 	return im.Ref(), out
 }
 
@@ -703,7 +704,7 @@ func (m Model) volumeDetails(w, h int) (string, []string) {
 		}
 		out = append(out, m.linkLine(i, dot+" "+st.Accent.Render(c.Name)+" → "+dest+st.Muted.Render(" "+rw)))
 	}
-	out = append(out, "", st.Muted.Render("f browse its files · d remove · n new · P prune unused"))
+	out = append(out, "", st.Muted.Render("Space o t browse its files · dd remove · Space a v new · P prune unused"))
 	return shortNames([]string{v.Name})[0], out
 }
 
@@ -732,7 +733,7 @@ func (m Model) networkDetails(w, h int) (string, []string) {
 		}
 		out = append(out, m.linkLine(i, st.Accent.Render(c.Name)+" "+c.IP+st.Muted.Render(alias)))
 	}
-	out = append(out, "", st.Muted.Render("c connect a container · x disconnect one · n new · d remove · P prune"))
+	out = append(out, "", st.Muted.Render("Space a c connect a container · Space d c disconnect one · Space a n new · dd remove · P prune"))
 	return n.Name, out
 }
 
@@ -764,51 +765,32 @@ func (m Model) systemDetails(w int) (string, []string) {
 
 // ------------------------------------------------------------- popups
 
-func (m Model) helpBox(bh int) []string {
-	st := m.st
-	w := min(m.w-4, 100)
-	var lines []string
-	where := "-"
-	for _, k := range Keys {
-		if k.Where != where {
-			where = k.Where
-			if len(lines) > 0 {
-				lines = append(lines, "")
-			}
-			lines = append(lines, st.Heading(whereNames[where]))
-		}
-		lines = append(lines, st.Accent.Render(ui.Fit(k.Keys, 16))+" "+k.Desc)
-	}
-	room := max(3, bh-4)
-	top := min(m.helpTop, max(0, len(lines)-room))
-	lines = lines[top:min(len(lines), top+room)]
-	return st.Popup("keys · j/k scroll · any key closes", lines, w, "")
-}
-
 func (m Model) footer() string {
 	st := m.st
-	mode := secKeys[m.sec]
 	var keys [][2]string
 	switch {
 	case m.filtering:
-		mode, keys = "search", [][2]string{{"↵", "keep"}, {"esc", "clear"}}
+		keys = [][2]string{{"esc", "done"}, {"^j/^k", "move"}}
 	case m.sec == secContainers:
-		keys = [][2]string{{"s", "start/stop"}, {"r", "restart"}, {"p", "pause"}, {"e", "shell"}, {"l", "logs"}, {"1-6", "details"}, {"o", "open port"}, {"d", "remove"}, {"tab", "sections"}, {"?", "keys"}}
+		keys = [][2]string{{"x", "start/stop"}, {"␣c", "container…"}, {"1-6", "details"}, {"o", "open port"}, {"y", "copy"}, {"dd", "remove"}, {"H/L", "sections"}, {"?", "keys"}}
 	case m.sec == secCompose:
-		keys = [][2]string{{"u", "up"}, {"d", "down"}, {"r", "restart"}, {"b", "build"}, {"p", "pull"}, {"l", "logs"}, {"e", "edit"}, {"y", "file"}, {"?", "keys"}}
+		keys = [][2]string{{"␣p", "project: up, down, build…"}, {"␣e c", "edit"}, {"␣u y", "file"}, {"H/L", "sections"}, {"?", "keys"}}
 	case m.sec == secImages:
-		keys = [][2]string{{"r", "run"}, {"p", "pull"}, {"H", "layers"}, {"d", "remove"}, {"P", "prune"}, {"?", "keys"}}
+		keys = [][2]string{{"␣i", "image: run, pull"}, {"␣u l", "layers"}, {"dd", "remove"}, {"P", "prune"}, {"?", "keys"}}
 	case m.sec == secVolumes:
-		keys = [][2]string{{"f", "browse"}, {"n", "new"}, {"d", "remove"}, {"P", "prune"}, {"?", "keys"}}
+		keys = [][2]string{{"␣o t", "browse"}, {"␣a v", "new"}, {"dd", "remove"}, {"P", "prune"}, {"?", "keys"}}
 	case m.sec == secNetworks:
-		keys = [][2]string{{"c", "connect"}, {"x", "disconnect"}, {"n", "new"}, {"d", "remove"}, {"P", "prune"}, {"?", "keys"}}
+		keys = [][2]string{{"␣a c", "connect"}, {"␣d c", "disconnect"}, {"␣a n", "new"}, {"dd", "remove"}, {"P", "prune"}, {"?", "keys"}}
 	case m.sec == secSystem:
-		keys = [][2]string{{"P", "prune…"}, {"ctrl+r", "reload"}, {"?", "keys"}}
+		keys = [][2]string{{"P", "prune…"}, {"r", "reload"}, {"?", "keys"}}
 	}
 	if m.focus == 1 && !m.filtering {
-		keys = append([][2]string{{"j/k", "move"}, {"↵", "jump"}, {"⌫", "back"}, {"esc", "list"}}, keys...)
+		keys = append([][2]string{{"j/k", "move"}, {"↵", "jump"}, {"⌫", "back"}, {"h", "list"}}, keys...)
 	}
 	msg := ""
+	if m.eng.Waiting() {
+		msg = st.Peach.Render(m.eng.Pending() + " …")
+	}
 	if m.msg != "" {
 		if m.msgErr {
 			msg = st.Red.Render(m.msg)
@@ -816,5 +798,5 @@ func (m Model) footer() string {
 			msg = st.Text.Render(m.msg)
 		}
 	}
-	return st.Footer(mode, keys, msg, m.w)
+	return st.Footer(m.eng.Mode.String(), keys, msg, m.w)
 }

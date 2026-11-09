@@ -14,7 +14,7 @@ import (
 )
 
 // Version is nauka's version.
-const Version = "0.1.1"
+const Version = "0.2.0"
 
 const usage = `nauka: Docker in the terminal.
 
@@ -44,7 +44,7 @@ func main() {
 		fmt.Print(usage)
 		return
 	case cmd == "keybindings": // scripts/keybindings, for Vayu's keybinding search
-		fmt.Print(tui.KeybindingsFile())
+		fmt.Print(tui.Keys.KeybindingsFile("Tmux", "go test ./internal/tui -update"))
 		return
 	case cmd != "":
 		fmt.Fprintf(os.Stderr, "nauka: unknown command %q\n\n%s", cmd, usage)

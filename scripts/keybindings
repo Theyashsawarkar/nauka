@@ -1,46 +1,81 @@
 # Keys inside the nauka screen, for Vayu's keybinding search
 # (keybind-search.py reads ~/.tmux/plugins/*/scripts). Generated from
-# internal/tui/keys.go by `go test ./internal/tui -update`; don't edit.
-# keybind: Tmux/nauka | j / k | Move to the next / previous row
-# keybind: Tmux/nauka | Home / End | Jump to the first / last row
-# keybind: Tmux/nauka | Tab / Shift+Tab | Switch to the next / previous section (Containers, Compose, Images, Volumes, Networks, System)
-# keybind: Tmux/nauka | Enter | Focus the details pane (Enter on a volume, network or container in it jumps there)
-# keybind: Tmux/nauka | Backspace | Go back to where Enter jumped from (or up a folder in Files)
-# keybind: Tmux/nauka | Esc | Leave the details pane, clear the search, or quit
-# keybind: Tmux/nauka | / | Search the list (filters it)
-# keybind: Tmux/nauka | Ctrl+r | Reload everything now (it also reloads every 2 s)
-# keybind: Tmux/nauka | ? | Show every key
-# keybind: Tmux/nauka | q | Quit
-# keybind: Tmux/nauka | 1 – 6 | Switch the container's details: Overview, Logs, Stats, Env, Inspect, Files (Containers)
-# keybind: Tmux/nauka | s | Start or stop the container (Containers)
-# keybind: Tmux/nauka | r | Restart the container (Containers)
-# keybind: Tmux/nauka | p | Pause or unpause the container (Containers)
-# keybind: Tmux/nauka | e | Open a shell inside the container (bash, else sh) (Containers)
-# keybind: Tmux/nauka | l | Follow the container's logs full screen (Ctrl+c comes back) (Containers)
-# keybind: Tmux/nauka | o | Open the container's published port in the browser (Containers)
-# keybind: Tmux/nauka | d | Remove the container (asks first) (Containers)
-# keybind: Tmux/nauka | v | Toggle showing secret values in Env (Containers)
-# keybind: Tmux/nauka | c | Copy the selected file out of the container to ~/Downloads (Files) (Containers)
-# keybind: Tmux/nauka | u | Start the compose project (docker compose up -d) (Compose)
-# keybind: Tmux/nauka | d | Stop and remove the compose project's containers (docker compose down; asks first) (Compose)
-# keybind: Tmux/nauka | r | Restart the compose project (Compose)
-# keybind: Tmux/nauka | b | Build the compose project's images (Compose)
-# keybind: Tmux/nauka | p | Pull the compose project's images (Compose)
-# keybind: Tmux/nauka | l | Follow the logs of every service of the project (Compose)
-# keybind: Tmux/nauka | e | Edit the compose file in $EDITOR (Compose)
-# keybind: Tmux/nauka | y | Toggle the details between the services and the compose file (Compose)
-# keybind: Tmux/nauka | r | Run a container from the image (asks for the options) (Images)
-# keybind: Tmux/nauka | p | Pull a newer copy of the image (Images)
-# keybind: Tmux/nauka | H | Toggle the image's layers (docker history) (Images)
-# keybind: Tmux/nauka | d | Remove the image (asks first) (Images)
-# keybind: Tmux/nauka | P | Remove dangling images (docker image prune; asks first) (Images)
-# keybind: Tmux/nauka | f | Open a shell in the volume's files (a throwaway alpine container) (Volumes)
-# keybind: Tmux/nauka | n | Create a volume (Volumes)
-# keybind: Tmux/nauka | d | Remove the volume (asks first; not while a container uses it) (Volumes)
-# keybind: Tmux/nauka | P | Remove unused volumes (docker volume prune; asks first) (Volumes)
-# keybind: Tmux/nauka | c | Connect a container to the network (Networks)
-# keybind: Tmux/nauka | x | Disconnect a container from the network (Networks)
-# keybind: Tmux/nauka | n | Create a network (Networks)
-# keybind: Tmux/nauka | d | Remove the network (asks first) (Networks)
-# keybind: Tmux/nauka | P | Remove unused networks (docker network prune; asks first) (Networks)
-# keybind: Tmux/nauka | P | Pick what to prune: stopped containers, images, volumes, networks, build cache, everything (System)
+# the keymap by `go test ./internal/tui -update`; don't edit.
+# keybind-group: Tmux/nauka | Space f | Find
+# keybind-group: Tmux/nauka | Space t | Tabs
+# keybind-group: Tmux/nauka | Space y | Copy
+# keybind-group: Tmux/nauka | Space d | Delete
+# keybind-group: Tmux/nauka | Space c | Container
+# keybind-group: Tmux/nauka | Space o | Open
+# keybind-group: Tmux/nauka | Space u | Toggles
+# keybind-group: Tmux/nauka | Space p | Compose project
+# keybind-group: Tmux/nauka | Space e | Edit
+# keybind-group: Tmux/nauka | Space i | Image
+# keybind-group: Tmux/nauka | Space a | Add
+# keybind: Tmux/nauka:normal | j / Down | Move to the next row
+# keybind: Tmux/nauka:normal | k / Up | Move to the previous row
+# keybind: Tmux/nauka:normal | g g / Home | Jump to the first row (5gg: the fifth)
+# keybind: Tmux/nauka:normal | G / End | Jump to the last row (5G: the fifth)
+# keybind: Tmux/nauka:normal | Ctrl+d / PgDn | Scroll half a page down
+# keybind: Tmux/nauka:normal | Ctrl+u / PgUp | Scroll half a page up
+# keybind: Tmux/nauka:normal | / / Space f f | Search the list (filters it)
+# keybind: Tmux/nauka:normal | r / Space r | Reload everything now (it also reloads every 2 s)
+# keybind: Tmux/nauka:normal | ? / Space ? | Show every key of this view
+# keybind: Tmux/nauka:normal | Space Space | Search every action and run one (the palette)
+# keybind: Tmux/nauka:normal | q / Space q | Quit
+# keybind: Tmux/nauka:normal | Esc | Go back one step: clear the filter, then quit
+# keybind: Tmux/nauka:normal | L / Tab | Switch to the next section (Containers, Compose, Images, Volumes, Networks, System)
+# keybind: Tmux/nauka:normal | H / Shift+Tab | Switch to the previous section
+# keybind: Tmux/nauka:normal | l | Focus the details pane
+# keybind: Tmux/nauka:normal | h | Focus the list (leave the details pane)
+# keybind: Tmux/nauka:normal | Enter | Focus the details pane; in it, jump to the volume, network or container under the cursor
+# keybind: Tmux/nauka:normal | Backspace / Ctrl+o | Go back to where Enter jumped from (or up a folder in Files)
+# keybind: Tmux/nauka:normal | Space t c | Switch to Containers
+# keybind: Tmux/nauka:normal | Space t p | Switch to Compose
+# keybind: Tmux/nauka:normal | Space t i | Switch to Images
+# keybind: Tmux/nauka:normal | Space t v | Switch to Volumes
+# keybind: Tmux/nauka:normal | Space t n | Switch to Networks
+# keybind: Tmux/nauka:normal | Space t s | Switch to System
+# keybind: Tmux/nauka:normal | y / Space y n | Copy the name of the selected row
+# keybind: Tmux/nauka:normal | Space y i | Copy the ID of the selected row
+# keybind: Tmux/nauka system:normal | Space d P / P | Remove what you pick: stopped containers, images, volumes, networks, build cache, everything (asks first)
+# keybind: Tmux/nauka containers:normal | 1 / Space t o | Switch the details to Overview
+# keybind: Tmux/nauka containers:normal | 2 / Space t l | Switch the details to Logs
+# keybind: Tmux/nauka containers:normal | 3 / Space t a | Switch the details to Stats
+# keybind: Tmux/nauka containers:normal | 4 / Space t e | Switch the details to Env
+# keybind: Tmux/nauka containers:normal | 5 / Space t j | Switch the details to Inspect (the JSON)
+# keybind: Tmux/nauka containers:normal | 6 / Space t f | Switch the details to Files
+# keybind: Tmux/nauka containers:normal | x / Space c s | Start or stop the container
+# keybind: Tmux/nauka containers:normal | Space c r | Restart the container
+# keybind: Tmux/nauka containers:normal | Space c p | Pause or unpause the container
+# keybind: Tmux/nauka containers:normal | Space c l | Follow the container's logs full screen (Ctrl+c comes back)
+# keybind: Tmux/nauka containers:normal | Space c x / Space o t | Open a shell inside the container (bash, else sh)
+# keybind: Tmux/nauka containers:normal | o / Space o b | Open the container's published port in the browser
+# keybind: Tmux/nauka containers:normal | d d / Space d d | Remove the container (asks first)
+# keybind: Tmux/nauka containers:normal | Space u s | Toggle showing secret values in Env
+# keybind: Tmux/nauka containers:normal | Space y f | Copy the selected file out of the container to ~/Downloads (Files)
+# keybind: Tmux/nauka compose:normal | Space p u | Start the compose project (docker compose up -d)
+# keybind: Tmux/nauka compose:normal | Space p d / d d | Stop and remove the compose project's containers (docker compose down; asks first)
+# keybind: Tmux/nauka compose:normal | Space p r | Restart the compose project
+# keybind: Tmux/nauka compose:normal | Space p b / b | Build the compose project's images
+# keybind: Tmux/nauka compose:normal | Space p p | Pull the compose project's images
+# keybind: Tmux/nauka compose:normal | Space p l | Follow the logs of every service of the project
+# keybind: Tmux/nauka compose:normal | Space e c | Edit the compose file in $EDITOR
+# keybind: Tmux/nauka compose:normal | Space u y | Toggle the details between the services and the compose file
+# keybind: Tmux/nauka images:normal | Space i r | Run a container from the image (asks for the options)
+# keybind: Tmux/nauka images:normal | Space i p | Pull a newer copy of the image
+# keybind: Tmux/nauka images:normal | Space u l | Toggle the image's layers (docker history)
+# keybind: Tmux/nauka images:normal | d d / Space d d | Remove the image (asks first)
+# keybind: Tmux/nauka images:normal | Space d p / P | Remove dangling images (docker image prune; asks first)
+# keybind: Tmux/nauka volumes:normal | Space o t | Open a shell in the volume's files (a throwaway alpine container)
+# keybind: Tmux/nauka volumes:normal | Space a v | Create a volume
+# keybind: Tmux/nauka volumes:normal | d d / Space d d | Remove the volume (asks first; not while a container uses it)
+# keybind: Tmux/nauka volumes:normal | Space d p / P | Remove unused volumes (docker volume prune; asks first)
+# keybind: Tmux/nauka networks:normal | Space a c | Connect a container to the network
+# keybind: Tmux/nauka networks:normal | Space d c | Disconnect a container from the network
+# keybind: Tmux/nauka networks:normal | Space a n | Create a network
+# keybind: Tmux/nauka networks:normal | d d / Space d d | Remove the network (asks first)
+# keybind: Tmux/nauka networks:normal | Space d p / P | Remove unused networks (docker network prune; asks first)
+# keybind: Tmux/nauka:insert | Esc | Stop typing and keep the search (back to NORMAL)
+# keybind: Tmux/nauka:insert | Ctrl+j / Down | Move to the next row while typing
+# keybind: Tmux/nauka:insert | Ctrl+k / Up | Move to the previous row while typing
